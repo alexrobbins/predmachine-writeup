@@ -1,0 +1,62 @@
+---
+title: "Fitness Coaching Through Wearables"
+author: "Alex Robbins"
+date: "July 25, 2015"
+output: html_document
+---
+
+Wearable computing can provide automated insight into workout correctness. Using a dataset generously provided by http://groupware.les.inf.puc-rio.br/har, we can train a classification model to provide a rating for a given workout's correctness.
+
+```{r,echo=FALSE}
+library(dplyr)
+library(caret)
+library(rpart)
+set.seed(777)
+```
+
+
+```{r,cache=TRUE}
+populated_columns <- c("roll_belt","pitch_belt","yaw_belt","total_accel_belt",
+                       "roll_arm", "pitch_arm", "yaw_arm", "total_accel_arm",
+                       "roll_dumbbell", "pitch_dumbbell", "yaw_dumbbell",
+                       "classe")
+
+train <- read.csv("pml-training.csv")
+filtered_train <- select(train, one_of(populated_columns))
+```
+After loading the data, it is apparent that most rows have NA values for almost all the columns. A small subset of columns are selected, which contain values for most observations.
+
+Then a single decision tree model is trained to gauge the predictive value of each of the remaining columns.
+```{r,cache=TRUE, }
+single_tree_model <- rpart(classe ~ ., data=filtered_train)
+varImp(single_tree_model)
+```
+
+The variable importance output shows that, while some variables are more predictive than others, they are all useful. 
+
+```{r,cache=TRUE}
+confusionMatrix(predict(single_tree_model, train, type="class"), train$classe)
+```
+
+A single decision tree model achieves roughly 65% accuracy on its own training data. The final model will be a random forest, trained from the same data and columns as the single decision tree.
+
+```{r,cache=TRUE}
+## enable parallelism
+library(doMC)
+registerDoMC(cores = 5)
+
+rf_model <- train(classe ~ ., data=filtered_train, method="rf")
+
+test <- read.csv("pml-testing.csv")
+predict(rf_model, test)
+```
+
+## Out of Sample Error
+
+Training a random forest allows us calculate an unbiased estimate of the out of sample error. This happens automatically while training the model. For our model, we can look up the out of sample error estimate as:
+
+```{r}
+1 - max(rf_model$results$Accuracy)
+```
+
+Note that, because we selected the model based on accuracy, the max accuracy is the accuracy of the final model.

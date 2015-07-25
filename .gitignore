@@ -11,3 +11,8 @@
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf
+
+# datasets
+pml-*.csv
+
+fitness_coaching_cache
