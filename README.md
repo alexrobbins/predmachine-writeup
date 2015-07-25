@@ -1,6 +1,6 @@
 # predmachine-writeup
 
-
+HTML version available at: http://alexrobbins.github.io/predmachine-writeup/
 
 ## Thanks
 
